@@ -62,6 +62,14 @@ export function zonedDateTime(value: unknown, timezone = "Asia/Singapore"): stri
   return `${local}:00${offset || "+00:00"}`;
 }
 
+// Reads an Obsidian datetime written in the course timezone back as an instant; other dates pass through.
+export function zonedInstant(value: unknown, timezone = "Asia/Singapore"): string | null {
+  const local = String(value ?? "").match(/^\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?$/)?.[0];
+  if (!local) return canvasDate(value);
+  const offset = zonedDateTime(`${local}Z`, timezone)?.slice(-6) ?? "Z";
+  return canvasDate(new Date(`${local}${offset}`).toISOString());
+}
+
 export function documentRecord({
   id,
   kind,

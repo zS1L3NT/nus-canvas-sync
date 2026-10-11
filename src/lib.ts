@@ -8,6 +8,7 @@ export {
   preserveIncompleteState,
   stateFromDocuments,
   zonedDateTime,
+  zonedInstant,
 } from "./lib/documents.ts";
 export { byPosition, safeName, uniqueNames, vaultName } from "./lib/naming.ts";
 export {
