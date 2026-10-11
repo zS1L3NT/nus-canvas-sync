@@ -16,6 +16,7 @@ import {
   sanitizeCanvasSecrets,
 } from "./archive-helpers.ts";
 import { canvasDownload, canvasError, canvasJson, collectApiResource, collectResource } from "./canvas-client.ts";
+import { collectCanvasTimestamps } from "./canvas-timestamps.ts";
 import { classifyWarnings, pendingFromRun, renderReport } from "./changes.ts";
 import { loadConfig, parseOptions } from "./config.ts";
 import { historyReport, readHistory, recordHistory, reviewHistory, startHistory } from "./history.ts";
@@ -291,7 +292,7 @@ async function collectCourse(config: ArchiveConfig, configuredCourse: Configured
   }
   // Canvas only lists the last 14 days of announcements unless given an explicit window.
   const announcementsUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const announcements = await collectResource<CanvasAnnouncement[]>(config, warnings, "announcement", [
+  const listedAnnouncements = await collectResource<CanvasAnnouncement[]>(config, warnings, "announcement", [
     "announcements",
     "list",
     "--course-id",
@@ -301,12 +302,31 @@ async function collectCourse(config: ArchiveConfig, configuredCourse: Configured
     "--end-date",
     announcementsUntil,
   ]);
-  const quizzes = await collectResource<CanvasQuiz[]>(config, warnings, "quiz-list", [
+  const announcements = await collectCanvasTimestamps(
+    config,
+    warnings,
+    courseId,
+    "announcement",
+    listedAnnouncements,
+    await readJson<CanvasAnnouncement[]>(
+      path.join(config.rawDirectory, configuredCourse.code, "announcements.json"),
+      [],
+    ),
+  );
+  const listedQuizzes = await collectResource<CanvasQuiz[]>(config, warnings, "quiz-list", [
     "quizzes",
     "list",
     "--course-id",
     String(courseId),
   ]);
+  const quizzes = await collectCanvasTimestamps(
+    config,
+    warnings,
+    courseId,
+    "quiz",
+    listedQuizzes,
+    await readJson<CanvasQuiz[]>(path.join(config.rawDirectory, configuredCourse.code, "quizzes.json"), []),
+  );
   const calendarEvents = await collectResource<CanvasCalendarEvent[]>(config, warnings, "calendar", [
     "calendar",
     "list",
@@ -554,7 +574,11 @@ async function buildDocuments(
   for (const page of data.pages) {
     const localPath = path.posix.join("content/pages", `${page.page_id || safeName(page.url)}.md`);
     const content = markdown(page.body || "", localPath);
-    await atomicWrite(path.join(courseDirectory, localPath), `# ${page.title}\n\n${content}`, page.updated_at);
+    await atomicWrite(
+      path.join(courseDirectory, localPath),
+      `# ${page.title}\n\n${content}`,
+      canvasDate(page.updated_at) ?? page.created_at,
+    );
     documents.push(
       documentRecord({
         id: page.page_id || page.url,
@@ -577,7 +601,7 @@ async function buildDocuments(
     await atomicWrite(
       path.join(courseDirectory, localPath),
       `# ${assignment.name}\n\n## Dates\n\n${dateLines || "- No dated variants"}\n\n${content}`,
-      assignment.updated_at,
+      canvasDate(assignment.updated_at) ?? assignment.created_at,
     );
     documents.push(
       documentRecord({
@@ -656,7 +680,7 @@ async function buildDocuments(
     await atomicWrite(
       path.join(courseDirectory, localPath),
       `# ${quiz.title}\n\n## Details\n\n${dateLines || "- No dated variants"}\n\n${content}`,
-      quiz.updated_at,
+      canvasDate(quiz.updated_at) ?? quiz.created_at,
     );
     documents.push(
       documentRecord({
