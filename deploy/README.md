@@ -86,6 +86,8 @@ Then, in that vault:
 
 The server is the source of the generated notes: anything you change in a generated note is overwritten at the next fetch. Your own notes sync both ways and are never deleted by a fetch. Cloudflare's free plan rejects uploads over 100 MB.
 
+Remotely Save aborts any sync that would modify more than 50% of the vault ("Abort sync if modification above percentage"). An update that changes how every note is written trips it, and the device stops syncing silently. Run one manual sync and confirm it, or raise the limit for that sync, then put it back.
+
 ## 7. Use it
 
 SSH into the server, then:
