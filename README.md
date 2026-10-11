@@ -38,6 +38,12 @@ Open the vault named Canvas in Obsidian and start from `Home.md`, which lists co
 
 Canvas links inside notes point at the local note or file when it exists, so the vault works offline. Times are in Singapore time. On filesystems with clones (APFS, Btrfs, XFS), vault files share blocks with `raw/`.
 
+Every generated Markdown note has `created` and `updated` properties, with seconds and an explicit timezone. Pages and assignments use their Canvas dates; quizzes and announcements get their dates through read-only GraphQL queries because the usual API responses omit them. These queries request only identifiers and timestamps, never grades or submissions. Failed or incomplete timestamp requests retain previously collected dates and produce warnings. `bun run vault` uses saved dates offline.
+
+When Canvas supplies a creation date without an update date, `updated` falls back to `created`. Unavailable dates stay blank. Inbox notes use the earliest available message timestamp for creation and the conversation's latest message timestamp for updates. `Home.md` and course overview notes are generated summaries, so their dates track local note creation and content changes; rebuilding identical summaries leaves their dates unchanged. Adding these properties to an existing summary preserves its existing file dates.
+
+For reliable sorting across devices, enable **Use frontmatter metadata** in Notebook Navigator's **Frontmatter fields** settings. Set the created-date field to `created` and the modified-date field to `updated`. These properties travel with the notes through WebDAV even when devices assign different filesystem creation dates. File modification dates still follow Canvas where available; filesystem creation dates are not rewritten. The generator leaves `.obsidian/` settings and user-authored notes alone.
+
 A fetch only replaces or removes files it generated. Your own notes and `.obsidian/` settings in the vault are left alone; avoid editing generated notes, because the next fetch overwrites them.
 
 ## Commands

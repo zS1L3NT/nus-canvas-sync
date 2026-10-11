@@ -76,6 +76,7 @@ export interface CanvasPage {
   title: string;
   body?: string;
   html_url?: string;
+  created_at?: string;
   updated_at?: string;
   published?: boolean;
   front_page?: boolean;
@@ -111,6 +112,7 @@ export interface CanvasAssignment extends Positioned {
   unlock_at?: string | null;
   lock_at?: string | null;
   html_url?: string;
+  created_at?: string;
   updated_at?: string;
   points_possible?: number | null;
   published?: boolean;
@@ -126,6 +128,7 @@ export interface CanvasAnnouncement {
   message?: string;
   html_url?: string;
   posted_at?: string;
+  created_at?: string;
   updated_at?: string;
   published?: boolean;
 }
@@ -158,6 +161,7 @@ export interface CanvasQuiz extends Positioned {
   unlock_at?: string | null;
   lock_at?: string | null;
   html_url?: string;
+  created_at?: string;
   updated_at?: string;
   points_possible?: number | null;
   published?: boolean;
@@ -194,6 +198,7 @@ export interface CanvasInboxConversation {
   messages?: CanvasInboxMessage[];
   last_message?: string;
   last_message_at?: string;
+  created_at?: string;
   updated_at?: string;
   workflow_state?: string;
   html_url?: string;
