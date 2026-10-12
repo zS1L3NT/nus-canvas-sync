@@ -66,11 +66,12 @@ test("vault repairs quiz modification dates and falls back to Canvas creation da
   await writeVault(vault, "Asia/Singapore", archived, plan);
   const quiz = path.join(vault, "CS1", plan.quizzes.get(1) ?? "");
   const content = await readFile(quiz, "utf8");
+  await writeFile(quiz, `${content}Accidental edit\n`);
   await utimes(quiz, new Date(), new Date());
   await writeVault(vault, "Asia/Singapore", archived, plan);
   assert.equal((await stat(quiz)).mtimeMs, Date.parse(updated));
   assert.equal(await readFile(quiz, "utf8"), content);
-  assert.match(content, /\ncreated: 2026-07-02T09:09:45\nupdated: 2026-09-01T10:00:00\n---\n/);
+  assert.doesNotMatch(content, /^(?:created|updated):/m);
   for (const note of [
     plan.quizzes.get(2),
     plan.pages.get("page"),
@@ -79,28 +80,11 @@ test("vault repairs quiz modification dates and falls back to Canvas creation da
   ]) {
     assert.ok(note);
     assert.equal((await stat(path.join(vault, "CS1", note))).mtimeMs, Date.parse(created));
-    assert.match(
-      await readFile(path.join(vault, "CS1", note), "utf8"),
-      /\ncreated: 2026-07-02T09:09:45\nupdated: 2026-07-02T09:09:45\n---\n/,
-    );
+    assert.doesNotMatch(await readFile(path.join(vault, "CS1", note), "utf8"), /^(?:created|updated):/m);
   }
 });
 
-test("adding date properties to a legacy Home note preserves its modification date", async (context) => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "canvas-home-dates-"));
-  context.after(() => rm(root, { recursive: true, force: true }));
-  const syncedAt = "2026-09-01T02:00:00Z";
-  await writeHome(root, "Asia/Singapore", [], syncedAt);
-  const note = path.join(root, "Home.md");
-  const body = (await readFile(note, "utf8")).replace(/^---\n[\s\S]*?\n---\n\n/, "");
-  await writeFile(note, body);
-  await utimes(note, new Date(syncedAt), new Date(syncedAt));
-  await writeHome(root, "Asia/Singapore", [], syncedAt);
-  assert.equal((await stat(note)).mtimeMs, Date.parse(syncedAt));
-  assert.match(await readFile(note, "utf8"), /^---\ntype: "home"\ncreated: \S+\nupdated: 2026-09-01T10:00:00\n---\n/);
-});
-
-test("all source notes contain dates, unknown creation dates stay blank, and summaries keep stable dates", async (context) => {
+test("source notes omit date properties and summaries keep stable modification dates", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "canvas-all-note-dates-"));
   context.after(() => rm(root, { recursive: true, force: true }));
   const created = "2026-07-02T01:09:45Z";
@@ -122,16 +106,16 @@ test("all source notes contain dates, unknown creation dates stay blank, and sum
   };
   await render();
   const unknown = await readFile(path.join(vault, "CS1", plan.quizzes.get(1) ?? ""), "utf8");
-  assert.match(unknown, /\ncreated:\nupdated:\n---\n/);
-  assert.match(
+  assert.doesNotMatch(unknown, /^(?:created|updated):/m);
+  assert.doesNotMatch(
     await readFile(path.join(vault, "CS1", plan.announcements.get(4) ?? ""), "utf8"),
-    /\ncreated:\nupdated:\n---\n/,
+    /^(?:created|updated):/m,
   );
   for (const note of [plan.announcements.get(2), plan.inbox.get(3)]) {
     assert.ok(note);
     const text = await readFile(path.join(vault, "CS1", note), "utf8");
-    assert.match(text, /\ncreated: 2026-07-02T09:09:45\nupdated: 2026-09-01T10:00:00\n---\n/);
-    assert.equal((text.match(/^updated:/gm) ?? []).length, 1);
+    assert.doesNotMatch(text, /^(?:created|updated):/m);
+    assert.equal((await stat(path.join(vault, "CS1", note))).mtimeMs, Date.parse(updated));
   }
   const summaries = [path.join(vault, "CS1", plan.note), path.join(vault, "Home.md")];
   const before = await Promise.all(
@@ -140,16 +124,16 @@ test("all source notes contain dates, unknown creation dates stay blank, and sum
   await new Promise((resolve) => setTimeout(resolve, 10));
   await render();
   for (const [index, note] of summaries.entries()) {
-    assert.match(before[index]?.text ?? "", /\ncreated: [\d-]+T[\d:]+\nupdated: [\d-]+T[\d:]+\n---\n/);
+    assert.doesNotMatch(before[index]?.text ?? "", /^(?:created|updated):/m);
     assert.equal(await readFile(note, "utf8"), before[index]?.text);
     assert.equal((await stat(note)).mtimeMs, before[index]?.stat.mtimeMs);
   }
-  await writeFile(summaries[0] ?? "", before[0]?.text.replace(/^updated:.*$/m, "updated: 2026-01-01T00:00:00") ?? "");
   data.course.syllabus_body = "<p>New content</p>";
   await render();
   const changed = await readFile(summaries[0] ?? "", "utf8");
-  assert.equal(changed.match(/^created:.*$/m)?.[0], before[0]?.text.match(/^created:.*$/m)?.[0]);
-  assert.notEqual(changed.match(/^updated:.*$/m)?.[0], "updated: 2026-01-01T00:00:00");
+  assert.doesNotMatch(changed, /^(?:created|updated):/m);
+  assert.match(changed, /New content/);
+  assert.ok((await stat(summaries[0] ?? "")).mtimeMs > (before[0]?.stat.mtimeMs ?? 0));
 });
 
 test("classic quizzes merge with their assignment and keep its overrides", () => {
