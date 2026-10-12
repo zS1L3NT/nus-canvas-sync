@@ -15,7 +15,7 @@ import {
   uniqueNames,
   vaultName,
   writeJson,
-  zonedDateTime,
+  zonedInstant,
 } from "./lib.ts";
 import { courseTasks } from "./tasks.ts";
 import type { CanvasModuleItem, CanvasTask, CourseData, FileEntry } from "./types.ts";
@@ -198,13 +198,14 @@ function frontmatter(fields: Record<string, string | number | null | undefined>)
     .map(([key, value]) =>
       value === null
         ? `${key}:`
-        : typeof value === "number" || /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(String(value))
+        : typeof value === "number" || /^\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?$/.test(String(value))
           ? `${key}: ${value}`
           : `${key}: ${JSON.stringify(value)}`,
     );
   return `---\n${lines.join("\n")}\n---\n\n`;
 }
 
+// Obsidian's date & time property type: unquoted local time to the second, without an offset.
 function noteDates(
   created: unknown,
   updated: unknown,
@@ -213,9 +214,7 @@ function noteDates(
   const timestamp = (value: unknown): string | null => {
     const valid = canvasDate(value);
     if (!valid) return null;
-    const date = new Date(valid);
-    const fraction = date.getUTCMilliseconds() ? `.${String(date.getUTCMilliseconds()).padStart(3, "0")}` : "";
-    return `${localDateTime(valid, timezone)}:${String(date.getUTCSeconds()).padStart(2, "0")}${fraction}${zonedDateTime(valid, timezone)?.slice(-6)}`;
+    return `${localDateTime(valid, timezone)}:${String(new Date(valid).getUTCSeconds()).padStart(2, "0")}`;
   };
   return { created: timestamp(created), updated: timestamp(canvasDate(updated) ?? created) };
 }
@@ -230,7 +229,8 @@ async function writeSummary(filePath: string, content: string, timezone: string)
     return null;
   });
   const header = previous.match(/^---\n([\s\S]*?)\n---\n/);
-  const saved = (key: string) => canvasDate(header?.[1]?.match(new RegExp(`^${key}: "?([^"\\n]+)"?$`, "m"))?.[1]);
+  const saved = (key: string) =>
+    zonedInstant(header?.[1]?.match(new RegExp(`^${key}: "?([^"\\n]+)"?$`, "m"))?.[1], timezone);
   const withoutDates = header
     ? previous.replace(header[0], header[0].replace(/^(?:created|updated):[^\n]*\n/gm, ""))
     : previous;
@@ -240,11 +240,13 @@ async function writeSummary(filePath: string, content: string, timezone: string)
   const updated = unchanged
     ? (saved("updated") ?? attributes?.mtime.toISOString() ?? created)
     : new Date().toISOString();
-  const metadata = frontmatter(noteDates(created, updated, timezone));
+  const dates = noteDates(created, updated, timezone);
+  const metadata = frontmatter(dates);
+  // Dates stay the last two properties, after any the note already has.
   const next = content.startsWith("---\n")
-    ? content.replace("---\n", `---\n${metadata.slice(4, -5)}`)
+    ? content.replace("\n---\n", `\n${metadata.slice(4, -6)}\n---\n`)
     : `${metadata}${content}`;
-  await atomicWrite(filePath, next, updated);
+  await atomicWrite(filePath, next, zonedInstant(dates.updated, timezone) ?? updated);
 }
 
 function courseLink(plan: VaultPlan): string {

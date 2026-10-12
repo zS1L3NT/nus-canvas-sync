@@ -13,6 +13,7 @@ import {
   uniqueNames,
   vaultName,
   zonedDateTime,
+  zonedInstant,
 } from "../src/lib.ts";
 
 test("HTML normalization preserves useful text and links", () => {
@@ -80,6 +81,8 @@ test("dates render in the course timezone and drop canvas-cli zero times", () =>
   assert.equal(localDateTime("2026-10-03T02:00:00Z"), "2026-10-03T10:00");
   assert.equal(zonedDateTime("2026-10-03T02:00:00Z"), "2026-10-03T10:00:00+08:00");
   assert.equal(zonedDateTime("0001-01-01T00:00:00Z"), null);
+  assert.equal(zonedInstant("2026-10-03T10:00:05"), "2026-10-03T02:00:05.000Z");
+  assert.equal(zonedInstant("2026-10-03T10:00:00+08:00"), "2026-10-03T10:00:00+08:00");
 });
 
 test("state comparison reports stable content changes", () => {
