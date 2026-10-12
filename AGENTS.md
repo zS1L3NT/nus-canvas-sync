@@ -42,7 +42,7 @@ Follow [STYLE.md](STYLE.md) strictly for every code change, and put future code-
 - Keep every Canvas operation read-only. Prefer structured JSON and deterministic, atomic outputs.
 - Keep `raw/` optimized for diffing and indexing: stable ordering and IDs, normalized text, explicit metadata, content hashes. A change to how raw documents are rendered shows up as a modification of every affected document, so avoid incidental format changes.
 - Keep the vault clean for a person: no numbering, IDs, logs, or machine files; dates in Singapore time; Canvas links rewritten to local notes and files where they exist; external links preserved.
-- A change that rewrites most vault notes trips Remotely Save's 50% modification limit, so devices stop syncing until the user confirms one sync. Say so in the PR and in your reply; see [deploy/README.md](deploy/README.md#6-connect-obsidian).
+- A change that rewrites most vault notes trips Remotely Save's 50% modification limit, so devices stop syncing until the user confirms one sync. Say so in the PR and in your reply; see [deploy/README.md](deploy/README.md#6-connect-obsidian). Never change that limit or any other Obsidian or Remotely Save setting yourself, including the files under the vault's `.obsidian/`; the user handles the device.
 - When the server vault is right but Obsidian is not, suspect the device first: the newest client-written files in `.obsidian/` show when it last synced.
 - The vault only removes files it generated (tracked in `raw/<COURSE>/vault.json`); never delete anything else there, such as `.obsidian/` or the user's own notes.
 - Never hand-edit `raw/` or the vault. Change the generator and run `bun run vault` (offline) or `bun run fetch`.
