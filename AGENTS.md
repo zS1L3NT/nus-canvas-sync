@@ -6,12 +6,11 @@ It runs on a Debian server: a systemd user timer runs `bun run fetch` on a sched
 
 When the user asks for a Canvas report, a Canvas update, what changed on Canvas, or a Canvas to Notion update, follow the [canvas-report skill](.agents/skills/canvas-report/SKILL.md) (`$canvas-report` in Codex/T3 Code; `/canvas-report` in Claude Code). Every report request starts with a locked fresh fetch on production; scheduled fetches keep the vault current between reports. Everything below is for working on the project itself; a report never changes the code, and code work never touches Notion.
 
-Follow [STYLE.md](STYLE.md) strictly for every code change, and put future code-style rules there rather than here.
+- Code style lives in `STYLE.md`: read it before writing code, and add new style rules there.
+- Commit, branch, and pull request rules live in `COMMIT.md`: read it before any commit, branch, or PR.
 
 ## Rules
 
-- Commit finished, verified work yourself on an `ai/` branch, using the repo's emoji-prefixed message style. PR titles are plain sentence case, without emoji. Ask before pushing, amending, or rewriting history.
-- Never commit personal details: hostnames, domains, IP addresses, personal paths, course lists or secrets. They belong in the gitignored `config.json` or `~/.config/nus-canvas-sync/`; use placeholders in docs and examples.
 - Never expose, copy, log, or persist Canvas credentials. `canvas-cli` holds them in the system keyring or its encrypted file store.
 - Never create, update, submit, grade, publish, or delete anything in Canvas.
 - Preserve stable identifiers, source URLs, timestamps, hashes, and warning details; diffs and indexing depend on them.
