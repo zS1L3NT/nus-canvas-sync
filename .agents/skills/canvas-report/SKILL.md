@@ -38,7 +38,7 @@ Write a brief report the user can scan during class. Start with the report's dat
 - Combine PDF, PowerPoint, summary and other versions of the same release into one bullet, such as “Lecture 11: Counting and Probability II released — 11 Oct, 7:34 pm.” Combine repeated updates to the same item into one bullet with its latest change time, or a time range when the sequence matters. Preserve meaningful intermediate changes, reversals and distinct requirements in that bullet.
 - Keep confirmed deadlines, availability, venues, required links and actionable instruction changes. When history contains only timestamp or metadata changes, say no readable instruction or date change was recorded. A grouped bullet must account for every related transition; unrelated items retain separate bullets.
 - Let the content determine the detail. Use a short nested list or extra sentence when a change needs it, such as removed quiz instructions. Concision must preserve information needed to act; there is no fixed bullet count or word limit.
-- After the content in each module section, include its relevant warnings and coverage notes. Mention coverage notes only when new or when they affect a conclusion. Preserve the full message of every item under **Warnings**, with a short contextual interpretation where needed. Omit empty warning sections.
+- Keep warnings at the top of **Audit summary** as specified in step 4. Keep subject-specific context that affects the meaning of a content change in that module's bullet.
 
 ## 3. Notion and calendar audit
 
@@ -99,7 +99,7 @@ After the module sections from step 2, use these sections with short bullets:
 
 1. **Notion updates**: material task-page changes and calendar actions. These can be grouped across modules. Name each changed page and what was added, replaced, removed or consolidated; omit routine checks.
 2. **Still requiring review**: every unresolved date, uncertain match, relevant persistent warning, or other item needing the user, including warnings intentionally kept under watch. Prefix each bullet with its module when applicable.
-3. **Audit summary**: missing, uncertain, duplicate or extra tasks by course (or that there were none); date properties changed (or that none were); anything else created or updated; confirmation that nothing was deleted; and any limits on audit coverage. Keep material page edits in Notion updates rather than repeating them here.
+3. **Audit summary**: start with **Warnings**, prefixed by module. Preserve the full message of every warning and add a short contextual interpretation where needed. Include coverage notes only when new or when they affect a conclusion; say “Warnings: none” when there are none. Follow with bullets for missing, uncertain, duplicate or extra tasks by course (or that there were none); date properties changed (or that none were); anything else created or updated; confirmation that nothing was deleted; and any limits on audit coverage. Keep material page edits in Notion updates rather than repeating them here.
 
 Do not present skipped calendar work as a warning.
 
