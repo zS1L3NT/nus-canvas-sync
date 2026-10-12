@@ -19,7 +19,7 @@ Every report request starts with a fresh, read-only fetch: run `flock raw/.fetch
 
 Run `bun run changes` for every recorded transition since the last reviewed report. If the user supplies a start time, use `bun run changes --since <ISO-8601 timestamp with timezone>`; interpret an unqualified local time in Singapore time. For example, 6 October 2026 at noon is `2026-10-06T12:00:00+08:00`. Explicit start times are inclusive. An optional `--through <timestamp>` selects an earlier end; the end is inclusive. The default review cursor is exclusive, so already reviewed events are not repeated.
 
-Record the exact timestamp printed as `Report through:`; the human-readable header shows the same time in Singapore time. History preserves each transition, its Canvas timestamp and its detection time, including reversals; list repeated changes to the same resource separately. Explicit date windows use the saved Canvas update time when usable; removals and changes with missing or unchanged Canvas timestamps use detection time. Default reports include every newly detected transition since review, including late discoveries. Historical endpoints include only data collected by that endpoint. Do not use current Canvas `updated_at` timestamps to reconstruct missing history.
+Record the exact timestamp printed as `Report through:`; the human-readable header shows the same time in Singapore time. Inspect every retained transition, including reversals, then group related transitions for presentation using step 2. Explicit date windows use the saved Canvas update time when usable; removals and changes with missing or unchanged Canvas timestamps use detection time. Default reports include every newly detected transition since review, including late discoveries. Historical endpoints include only data collected by that endpoint. Do not use current Canvas `updated_at` timestamps to reconstruct missing history.
 
 If selectable history is unavailable or the requested start predates its coverage, explain the limitation plainly. Do not substitute a timestamp-filtered current snapshot or acknowledge an incomplete historical report. History starts fresh at the first fetch after deployment; old pending differences are not imported. The first collection of each course establishes a baseline, not a historical change list.
 
@@ -31,12 +31,14 @@ If the user only wants to see changes, stop after step 2 and step 5.
 
 ## 2. Show the changes
 
-Lead the reply with the complete change list. Never drop, merge away, or summarise items into counts: the user relies on this list to not miss anything.
+Write a brief report the user can scan during class. Start with the report's date/time window and fresh-fetch time in Singapore time, then one short sentence stating what was synced and which integrations were checked or unavailable.
 
-- Group by course, then New, Updated, Removed, as the report does.
-- Render each vault path as a link to the note: `[Title](obsidian://open?vault=Canvas&file=<URL-encoded vault path>)`. The vault is named Canvas on the user's phone and Mac, so the link opens on either.
-- Keep date changes and diff lines. For long diffs, describe what changed in a sentence and keep the lines that matter (new requirements, changed dates, venues, links).
-- Mention coverage notes only when they are new or affect a conclusion. Show every item under **Warnings** with its full message.
+- Give each module with new Canvas content or material changes its own header, using the module code and a useful topic or course name. Keep all Canvas content for that subject under that header. Omit unchanged modules; state fetch coverage in the opening sentence.
+- Use one short bullet per meaningful content item: a lecture release, tutorial revision, assignment update, quiz change, or announcement. Lead with the idea and its practical consequence, then its change time. Link the idea to its canonical HTTPS Canvas page, assignment, quiz or file URL using clickable Markdown links. Use filenames only when needed for a required submission or to distinguish content.
+- Combine PDF, PowerPoint, summary and other versions of the same release into one bullet, such as “Lecture 11: Counting and Probability II released — 11 Oct, 7:34 pm.” Combine repeated updates to the same item into one bullet with its latest change time, or a time range when the sequence matters. Preserve meaningful intermediate changes, reversals and distinct requirements in that bullet.
+- Keep confirmed deadlines, availability, venues, required links and actionable instruction changes. When history contains only timestamp or metadata changes, say no readable instruction or date change was recorded. A grouped bullet must account for every related transition; unrelated items retain separate bullets.
+- Let the content determine the detail. Use a short nested list or extra sentence when a change needs it, such as removed quiz instructions. Concision must preserve information needed to act; there is no fixed bullet count or word limit.
+- Keep warnings at the top of **Audit summary** as specified in step 4. Keep subject-specific context that affects the meaning of a content change in that module's bullet.
 
 ## 3. Notion and calendar audit
 
@@ -93,15 +95,14 @@ The change report already turns routine Canvas responses into **Coverage notes**
 
 ## 4. Report
 
-After the change list from step 2:
+After the module sections from step 2, use these sections with short bullets:
 
-1. One or two prose sentences with the last fetch time and the courses checked.
-2. A short list of material Notion or calendar actions only, such as newly released content added to a task page.
-3. **Still requiring review**: every unresolved date, uncertain match, relevant persistent warning, or other item that needs the user, including warnings intentionally kept under watch.
-4. **Audit summary**: missing, uncertain, duplicate or extra tasks by course (or that there were none); every Notion date property changed (or that none were); each task page materially rewritten and what was removed or consolidated; anything else created or updated in Notion; and confirmation that nothing was deleted.
+1. **Notion updates**: material task-page changes and calendar actions. These can be grouped across modules. Name each changed page and what was added, replaced, removed or consolidated; omit routine checks.
+2. **Still requiring review**: every unresolved date, uncertain match, relevant persistent warning, or other item needing the user, including warnings intentionally kept under watch. Prefix each bullet with its module when applicable.
+3. **Audit summary**: start with **Warnings**, prefixed by module. Preserve the full message of every warning and add a short contextual interpretation where needed. Include coverage notes only when new or when they affect a conclusion; say “Warnings: none” when there are none. Follow with bullets for missing, uncertain, duplicate or extra tasks by course (or that there were none); date properties changed (or that none were); anything else created or updated; confirmation that nothing was deleted; and any limits on audit coverage. Keep material page edits in Notion updates rather than repeating them here.
 
 Do not present skipped calendar work as a warning.
 
 ## 5. Mark the changes reviewed
 
-Once the complete change list has been shown to the user, run `bun run changes --reviewed --through <last_sync>` with the report end timestamp noted in step 1. This advances the default review cursor and never deletes history. An intentionally historical report ending before the current cursor must not move the cursor backwards. The next report then starts from this point. If it refuses because a scheduled fetch ran in between, run `bun run changes` again, show the user what is new, and retry with the new `last_sync`. Do not mark changes reviewed if no report was produced.
+Once the report accounting for all changes has been shown to the user, run `bun run changes --reviewed --through <last_sync>` with the report end timestamp noted in step 1. This advances the default review cursor and never deletes history. An intentionally historical report ending before the current cursor must not move the cursor backwards. The next report then starts from this point. If it refuses because a scheduled fetch ran in between, run `bun run changes` again, show the user what is new, and retry with the new `last_sync`. Do not mark changes reviewed if no report was produced.
