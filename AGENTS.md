@@ -6,6 +6,8 @@ It runs on a Debian server: a systemd user timer runs `bun run fetch` on a sched
 
 When the user asks for a Canvas report, a Canvas update, what changed on Canvas, or a Canvas to Notion update, follow the [canvas-report skill](.agents/skills/canvas-report/SKILL.md) (`$canvas-report` in Codex/T3 Code; `/canvas-report` in Claude Code). Every report request starts with a locked fresh fetch on production; scheduled fetches keep the vault current between reports. Everything below is for working on the project itself; a report never changes the code, and code work never touches Notion.
 
+Every agent that reports through canvas-report must read and apply the [simple-english skill](.agents/skills/simple-english/SKILL.md). Follow canvas-report for the report structure and its formatting exception.
+
 - Code style lives in `STYLE.md`: read it before writing code, and add new style rules there.
 - Commit, branch, and pull request rules live in `COMMIT.md`: read it before any commit, branch, or PR.
 

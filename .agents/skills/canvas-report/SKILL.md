@@ -7,6 +7,14 @@ description: Show every Canvas change since the user last reviewed one, as fetch
 
 Canvas is read-only. The project does the Canvas work deterministically, and on the production server a systemd timer runs `bun run fetch` on a schedule; your job is to present the changes and keep Notion and the exam calendar accurate.
 
+## Required writing skill
+
+Before writing report text, read and apply the [simple-english skill](../simple-english/SKILL.md). This requirement applies to every agent, including any delegated agent. Include this requirement and the skill path in any delegated report task.
+
+Use Plain mode unless the user requests Strict mode. Apply the wording rules to report text, progress messages, and Notion prose written during this workflow. Keep the headings, bullets, nested lists, emphasis, and clickable links required by this skill. This report structure overrides simple-english rules that require prose-only replies or restrict formatting. Within that structure, use short sentences, active voice, and plain words. Preserve facts, identifiers, dates, URLs, and full quoted warning messages.
+
+Before delivery, make sure that the wording follows simple-english and that the report accounts for every required change and audit finding.
+
 ## Agent access
 
 Use shell access to the production checkout for all project commands, even when the agent session starts in a development worktree. Read that checkout's `AGENTS.md` first. Use the Notion and Google Calendar tools available in the current agent; do not assume Claude account connectors are available elsewhere. If a required integration is unavailable, show the Canvas changes and state which audit checks could not be performed. Do not claim those checks passed or that external updates were made.
