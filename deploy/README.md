@@ -81,10 +81,11 @@ Then, in that vault:
 
 1. Settings → Community plugins → turn on community plugins → Browse → install and enable **Remotely Save**.
 2. Remotely Save settings → Remote service **WebDAV**: the `https://` address of your tunnel hostname, the username and password from step 5, auth type **basic**. Use the hostname root as the address, without `/Canvas/`; the plugin adds that folder automatically. Leave the remote base directory unset or set it to `Canvas`. Tap **Check connectivity**.
-3. Auto sync: turn on **sync on startup** (a few seconds' delay) and a schedule such as every 10 minutes. Optionally turn on sync on save for your own notes.
-4. Run the first sync on Wi-Fi; it downloads the whole vault.
+3. Choose **Sync direction** based on what you need. Keep **Bidirectional** to share personal notes and `.obsidian/` settings between devices. Use **Incremental pull only** if the server should overwrite accidental device edits and restore server modification dates. Pull-only applies to the whole vault: personal notes and settings will not upload. With **Sync Config Dir** enabled, it downloads `.obsidian/` settings from the server and can overwrite device changes. Remotely Save does not offer separate directions for generated notes and `.obsidian/` in the same sync. See [Remotely Save's sync decisions](https://github.com/remotely-save/remotely-save/blob/master/docs/sync_algorithm/v3/design.md), [configuration folder handling](https://github.com/remotely-save/remotely-save/blob/master/pro/src/sync.ts), and [timestamp handling](https://github.com/remotely-save/remotely-save/blob/master/src/copyLogic.ts).
+4. Auto sync: turn on **sync on startup** (a few seconds' delay) and a schedule such as every 10 minutes.
+5. Run the first sync on Wi-Fi; it downloads the whole vault.
 
-The server is the source of the generated notes: anything you change in a generated note is overwritten at the next fetch. Your own notes sync both ways and are never deleted by a fetch. Cloudflare's free plan rejects uploads over 100 MB.
+The server is the source of the generated notes: anything you change in a generated note on the server is overwritten at the next fetch. Pull-only sync also replaces accidental device edits, even when the server file has not changed. Use bidirectional sync if you need personal notes or `.obsidian/` settings to upload; it can upload accidental edits to generated notes too. The generator never deletes your own notes. The WebDAV endpoint still accepts writes, so every device must use pull-only sync to keep device edits off the server. Cloudflare's free plan rejects uploads over 100 MB.
 
 Remotely Save aborts any sync that would modify more than 50% of the vault ("Abort sync if modification above percentage"). An update that changes how every note is written trips it, and the device stops syncing silently. Run one manual sync on each device and confirm it. Leave the limit as it is.
 

@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { copyFile, mkdir, readdir, readFile, rm, stat } from "node:fs/promises";
+import { copyFile, mkdir, readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { inboxConversationOrder, inboxMarkdown } from "./archive-helpers.ts";
 import {
@@ -15,7 +15,6 @@ import {
   uniqueNames,
   vaultName,
   writeJson,
-  zonedInstant,
 } from "./lib.ts";
 import { courseTasks } from "./tasks.ts";
 import type { CanvasModuleItem, CanvasTask, CourseData, FileEntry } from "./types.ts";
@@ -190,63 +189,13 @@ export function vaultPathForDocument(
 
 function frontmatter(fields: Record<string, string | number | null | undefined>): string {
   const lines = Object.entries(fields)
-    .filter(
-      ([key, value]) =>
-        (value !== null && value !== undefined && value !== "") ||
-        ((key === "created" || key === "updated") && value === null),
-    )
+    .filter(([, value]) => value !== null && value !== undefined && value !== "")
     .map(([key, value]) =>
-      value === null
-        ? `${key}:`
-        : typeof value === "number" || /^\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?$/.test(String(value))
-          ? `${key}: ${value}`
-          : `${key}: ${JSON.stringify(value)}`,
+      typeof value === "number" || /^\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?$/.test(String(value))
+        ? `${key}: ${value}`
+        : `${key}: ${JSON.stringify(value)}`,
     );
   return `---\n${lines.join("\n")}\n---\n\n`;
-}
-
-// Obsidian's date & time property type: unquoted local time to the second, without an offset.
-function noteDates(
-  created: unknown,
-  updated: unknown,
-  timezone: string,
-): { created: string | null; updated: string | null } {
-  const timestamp = (value: unknown): string | null => {
-    const valid = canvasDate(value);
-    if (!valid) return null;
-    return `${localDateTime(valid, timezone)}:${String(new Date(valid).getUTCSeconds()).padStart(2, "0")}`;
-  };
-  return { created: timestamp(created), updated: timestamp(canvasDate(updated) ?? created) };
-}
-
-async function writeSummary(filePath: string, content: string, timezone: string): Promise<void> {
-  const previous = await readFile(filePath, "utf8").catch((error) => {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    return "";
-  });
-  const attributes = await stat(filePath).catch((error) => {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    return null;
-  });
-  const header = previous.match(/^---\n([\s\S]*?)\n---\n/);
-  const saved = (key: string) =>
-    zonedInstant(header?.[1]?.match(new RegExp(`^${key}: "?([^"\\n]+)"?$`, "m"))?.[1], timezone);
-  const withoutDates = header
-    ? previous.replace(header[0], header[0].replace(/^(?:created|updated):[^\n]*\n/gm, ""))
-    : previous;
-  const created = saved("created") ?? attributes?.birthtime.toISOString() ?? new Date().toISOString();
-  const unchanged =
-    withoutDates === content || (!header && previous === content.replace(/^---\n[\s\S]*?\n---\n\n/, ""));
-  const updated = unchanged
-    ? (saved("updated") ?? attributes?.mtime.toISOString() ?? created)
-    : new Date().toISOString();
-  const dates = noteDates(created, updated, timezone);
-  const metadata = frontmatter(dates);
-  // Dates stay the last two properties, after any the note already has.
-  const next = content.startsWith("---\n")
-    ? content.replace("\n---\n", `\n${metadata.slice(4, -6)}\n---\n`)
-    : `${metadata}${content}`;
-  await atomicWrite(filePath, next, zonedInstant(dates.updated, timezone) ?? updated);
 }
 
 function courseLink(plan: VaultPlan): string {
@@ -390,7 +339,6 @@ export async function writeVault(
             .map((type) => submissionLabels[type] ?? type.replaceAll("_", " "))
             .join(", "),
           canvas: task.url,
-          ...noteDates(source?.created_at, source?.updated_at, timezone),
         }),
         groupDates.length ? `> [!info] Dates for your group\n${groupDates.join("\n")}\n\n` : "",
         markdown(source?.description, note),
@@ -408,7 +356,6 @@ export async function writeVault(
         course: courseLink(plan),
         type: "page",
         canvas: page.html_url || `https://canvas.nus.edu.sg/courses/${data.course.id}/pages/${page.url}`,
-        ...noteDates(page.created_at, page.updated_at, timezone),
       })}${markdown(page.body, note)}`,
       canvasDate(page.updated_at) ?? page.created_at,
     );
@@ -425,7 +372,6 @@ export async function writeVault(
         type: "announcement",
         posted: date(announcement.posted_at),
         canvas: announcement.html_url,
-        ...noteDates(announcement.created_at, updated, timezone),
       })}${markdown(announcement.message, note)}`,
       updated,
     );
@@ -435,24 +381,19 @@ export async function writeVault(
     const note = plan.inbox.get(Number(conversation.id));
     if (!note) continue;
     const lastMessage = conversation.last_message_at || conversation.updated_at;
-    const firstMessage = conversation.messages
-      ?.map((message) => canvasDate(message.created_at))
-      .filter((date): date is string => date !== null)
-      .sort((left, right) => Date.parse(left) - Date.parse(right))[0];
     await write(
       note,
       `${frontmatter({
         course: courseLink(plan),
         type: "message",
         canvas: conversation.html_url || `https://canvas.nus.edu.sg/conversations/${conversation.id}`,
-        ...noteDates(canvasDate(conversation.created_at) ?? firstMessage, lastMessage, timezone),
       })}${inboxMarkdown(conversation, (html) => markdown(html, note))}\n`,
       lastMessage,
     );
   }
 
   generated.push(plan.note);
-  await writeSummary(path.join(directory, plan.note), courseNote(data, plan, tasks, timezone, markdown), timezone);
+  await atomicWrite(path.join(directory, plan.note), courseNote(data, plan, tasks, timezone, markdown));
 
   const manifestPath = path.join(rawDirectory, "vault.json");
   const current = new Set(generated.map((relative) => relative.toLocaleLowerCase("en")));
@@ -546,9 +487,5 @@ export async function writeHome(
       );
     }
   }
-  await writeSummary(
-    path.join(vaultDirectory, "Home.md"),
-    `${frontmatter({ type: "home" })}${lines.join("\n")}\n`,
-    timezone,
-  );
+  await atomicWrite(path.join(vaultDirectory, "Home.md"), `${frontmatter({ type: "home" })}${lines.join("\n")}\n`);
 }
